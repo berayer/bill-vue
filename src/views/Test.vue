@@ -1,81 +1,87 @@
 <template>
-  <n-button class="absolute" @click="createPdf">预览</n-button>
+  <div class="absolute left-1/2">
+    <n-button @click="click(sg)">预览</n-button>
+    <n-button @click="sginShow = true">签字</n-button>
+  </div>
+
+  <n-modal v-model:show="sginShow" preset="card" :style="{ width: '700px' }" title="请在下面区域签字" :on-after-enter="openSign">
+    <div class="flex justify-center">
+      <canvas id="lad" ref="sgin" width="600" height="350" style="height: 350px; width: 600px; border: 2px dashed #c9c9c9" />
+    </div>
+
+    <div class="mt-4 flex w-full justify-between px-8">
+      <div class="space-x-2">
+        <n-button type="primary" @click="handleClear">重置</n-button>
+        <n-button type="warning" @click="handleUndo">撤销</n-button>
+      </div>
+
+      <div class="space-x-2">
+        <n-button @click="sginShow = false">取消</n-button>
+        <n-button type="info" @click="sginSubmit">确认</n-button>
+      </div>
+    </div>
+  </n-modal>
   <iframe class="h-screen w-screen" :src="url" />
 </template>
 
 <script setup lang="ts">
-import '@/fonts/SimSun-normal.js'
-import '@/fonts/SimSun-bold.js'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { createBillPdf } from '@/utils/billUtil'
+import SmoothSignature from 'smooth-signature'
+import mock from '@/mock/bill.json'
 
+const sginShow = ref(false)
 const url = ref('')
+const sgin = ref<HTMLCanvasElement | null>(null)
+const canvasins = ref<SmoothSignature | null>(null)
+const sg = ref('')
 
-async function createPdf() {
-  const doc = new jsPDF()
-  doc.setFont('SimSun')
-  doc.setFontSize(14)
-  doc.text('2023年8月对账单', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' })
-  doc.setFontSize(12)
-  doc.text('B0546 皇朝家具定制有限公司', doc.internal.pageSize.getWidth() / 2, 20, {
-    align: 'center'
+const openSign = () => {
+  canvasins.value = new SmoothSignature(sgin.value!, {
+    width: 600,
+    height: 350,
+    bgColor: '#fff',
+    minWidth: 3,
+    maxWidth: 10,
+    scale: 2
   })
-
-  doc.setFontSize(10)
-  autoTable(doc, {
-    head: [['序号', '业务日期', '订单号', '描述', '扣款金额', '汇款金额', '结余', '备注']],
-    body: getDa(50),
-    startY: 30,
-    styles: {
-      font: 'SimSun',
-      lineWidth: 0.1,
-      lineColor: '#000000',
-      fontSize: 10
-    },
-    headStyles: {
-      halign: 'center',
-      fillColor: undefined,
-      textColor: '#000000',
-      fontStyle: 'bold'
-    },
-    columnStyles: {
-      0: { halign: 'center' },
-      1: { halign: 'center', cellWidth: 21 },
-      2: { halign: 'center', cellWidth: 40 },
-      3: { cellWidth: 40 },
-      4: { halign: 'center' },
-      5: { halign: 'center' },
-      6: { halign: 'center' }
-    }
-  })
-
-  // const headers = ['序号', '性别', '爱好']
-  // doc.table(10, 30, getDa(50), headers, {
-  //   autoSize: true,
-  //   printHeaders: true,
-  //   cellStart: (a, b) => {
-  //     console.log(a)
-  //   }
-  // })
-
-  const dataUrl = doc.output('datauristring', { filename: '啊啊啊.pdf' })
-  url.value = dataUrl
 }
 
-function getDa(s: number) {
-  const ds = []
-  for (let i = 0; i < s; i++) {
-    ds.push([
-      `${i + 1}`,
-      '2023-09-01',
-      'B02342300034_T10_01',
-      '财务审核自动扣款',
-      '3000.00',
-      '4000.00',
-      '-1000.00',
-      ''
-    ])
+function handleClear() {
+  canvasins.value?.clear()
+}
+
+function handleUndo() {
+  canvasins.value?.undo()
+}
+
+function sginSubmit() {
+  const isEmpty = canvasins.value?.isEmpty()
+  if (isEmpty) {
+    window.$message.error('签名不能为空')
+    return
   }
+  const pngUrl = canvasins.value?.getPNG()
+  sg.value = pngUrl!
+  // console.log(sg.value)
+  sginShow.value = false
+  click(sg.value)
+}
+
+const click = (sgin?: string) => {
+  url.value = createBillPdf({
+    title: '2023年8月对账单',
+    dealerNo: 'B0546 皇朝家具定制有限公司',
+    data: getDa(),
+    sgin: sgin,
+    user: 'B0241老板'
+  })
+}
+
+function getDa() {
+  const ds: Array<string[]> = []
+  mock.forEach((item) => {
+    ds.push([item[0], item[1], item[2], item[3], item[4], item[5], (Number.parseFloat(item[6]) - 118630.13).toFixed(2), ''])
+  })
   return ds
 }
 </script>

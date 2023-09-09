@@ -1,5 +1,5 @@
 module.exports = {
-  printWidth: 100,
+  printWidth: 150,
   // 指定每个缩进级别的空格数
   tabWidth: 2,
   // 使用制表符而不是空格缩进行
