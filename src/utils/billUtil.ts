@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-type BillPpdfData = {
+export type BillPpdfData = {
   title: string
   dealerNo: string
   data: Array<string[]>

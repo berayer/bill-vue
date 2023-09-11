@@ -5,8 +5,8 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 export const constantRoutes: RouteRecordRaw[] = [
   {
-    path: '/',
-    component: () => import('@/views/Test.vue')
+    path: '/billConfirm',
+    component: () => import('@/views/confirm.vue')
   }
   // {
   //   path: '/:path(.*)*',
